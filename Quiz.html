@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boyfriend Quiz</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #ffe4ec, #fff9f0);
+      color: #333;
+      text-align: center;
+      padding: 30px;
+    }
+
+    h1 {
+      font-size: 2.8em;
+      color: #e75480;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 2.2em;
+      color: #e75480;
+      margin-bottom: 20px;
+    }
+
+    .cookie-game-container {
+      max-width: 1000px;
+      margin: 50px auto 150px;
+      text-align: center;
+      position: relative;
+    }
+
+    .cookie-intro {
+      font-size: 1.1em;
+      margin-bottom: 30px;
+    }
+
+    .cookie-grid {
+      position: relative;
+      width: 100%;
+      height: 600px;
+    }
+
+    .cookie {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .cookie:hover {
+      transform: scale(1.1);
+    }
+
+    .nom-text {
+      position: absolute;
+      font-weight: bold;
+      color: #ff6f91;
+      font-size: 16px;
+      text-shadow: 1px 1px white;
+      pointer-events: none;
+    }
+
+    #game-message {
+      font-size: 1.5em;
+      margin-top: 40px;
+      color: #d9534f;
+    }
+
+    .game-button {
+      margin-top: 30px;
+      padding: 12px 25px;
+      font-size: 1em;
+      background-color: #ff6f91;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .game-button:hover {
+      background-color: #e65c80;
+    }
+
+    #after-msg {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+
+    body.poisoned {
+      background-color: #aaffaa;
+      transition: background-color 0.3s;
+    }
+
+    /* Whack-a-mole styles */
+    .whack-game-container {
+      max-width: 1000px;
+      margin: 50px auto;
+      text-align: center;
+    }
+
+    #whack-area {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      margin: 30px auto;
+      background: linear-gradient(45deg, #90EE90, #98FB98);
+      border: 3px solid #228B22;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    .whack-img {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: transform 0.1s ease;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      object-fit: cover;
+    }
+
+    .whack-img:hover {
+      transform: scale(1.1);
+    }
+
+    .whack-text {
+      position: absolute;
+      font-weight: bold;
+      font-size: 18px;
+      color: #ff6f91;
+      pointer-events: none;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+
+    #whack-score {
+      font-size: 1.8em;
+      margin-top: 40px;
+      color: #e75480;
+      font-weight: bold;
+    }
+
+    #whack-message {
+      font-size: 1.2em;
+      margin: 20px 0;
+      color: #333;
+      min-height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cookie-game-container">
+    <h1>Let's see how much you've learned of your boyfriend's brain these past 7 months.</h1>
+    <p class="cookie-intro">One day Alex was scavenging the closet because he was feeling hungry during the night, and happened to trample upon 10 cookies. Help Alex find out which cookies are safe to eat!</p>
+    <div class="cookie-grid" id="cookie-grid"></div>
+    <div id="game-message"></div>
+    <button class="game-button" id="next-game-btn" style="display:none;" onclick="document.querySelector('#whack-game').style.display='block'; this.parentElement.style.display='none';">Continue Journey</button>
+    <p id="after-msg" style="display: none;">Alex is still alive! There's still time to save him!</p>
+  </div>
+
+  <div id="whack-game" class="whack-game-container" style="display:none;">
+    <h2>While Alex was scavenging for food, he fell down a ditch and is trying to get back up!</h2>
+    <p>You must stop him from becoming fat! Whack-a-mole: Alex Edition!</p>
+    <p><strong>Warning:</strong> Don't hit Nico by mistake - she'll get upset!</p>
+    <button class="game-button" id="start-whack-btn">Start Game</button>
+    <div id="whack-message"></div>
+    <div id="whack-area"></div>
+    <div id="whack-score" style="display:none;"></div>
+    <button class="game-button" id="whack-next-btn" style="display:none;">Continue Journey</button>
+  </div>
+
+  <script>
+    // Cookie Game Logic
+    const cookieGrid = document.getElementById('cookie-grid');
+    const gameMessage = document.getElementById('game-message');
+    const nextButton = document.getElementById('next-game-btn');
+    const afterMessage = document.getElementById('after-msg');
+
+    let poisonedIndex = Math.floor(Math.random() * 10);
+    let score = 0;
+    let gameOver = false;
+
+    // Create cookies with random positions
+    for (let i = 0; i < 10; i++) {
+      const img = document.createElement('img');
+      img.src = 'cookie.png';
+      img.classList.add('cookie');
+      img.dataset.index = i;
+
+      // Random positioning with some margin from edges
+      const randX = Math.floor(Math.random() * 80) + 5;
+      const randY = Math.floor(Math.random() * 80) + 5;
+      img.style.left = `${randX}%`;
+      img.style.top = `${randY}%`;
+
+      img.addEventListener('click', function handleClick() {
+        if (gameOver || img.dataset.eaten === 'true') return;
+
+        const idx = parseInt(img.dataset.index);
+
+        if (idx === poisonedIndex) {
+          document.body.classList.add('poisoned');
+          gameMessage.textContent = `You've been poisoned! You died! Score: ${score}/9`;
+          gameOver = true;
+          document.querySelectorAll('.cookie').forEach(el => el.remove());
+          nextButton.style.display = 'inline-block';
+          afterMessage.style.display = 'block';
+        } else {
+          score++;
+          img.dataset.eaten = 'true';
+          img.remove();
+
+          const nom = document.createElement('div');
+          nom.textContent = 'nom nom nom';
+          nom.classList.add('nom-text');
+          nom.style.left = img.style.left;
+          nom.style.top = img.style.top;
+          cookieGrid.appendChild(nom);
+
+          // Remove nom text after animation
+          setTimeout(() => nom.remove(), 1500);
+
+          // Check if all safe cookies eaten
+          if (score === 9) {
+            gameMessage.textContent = `Perfect! You ate all the safe cookies! Score: ${score}/9`;
+            gameOver = true;
+            nextButton.style.display = 'inline-block';
+            afterMessage.style.display = 'block';
+          }
+        }
+      });
+
+      cookieGrid.appendChild(img);
+    }
+
+    // Whack-a-mole Game Logic
+    const alexFaces = [
+      'alex1.jpg',
+      'alex2.jpg',
+      'alex3.jpg',
+      'alex4.jpg'
+    ];
+
+    const nicoFaces = [
+      'IMG_7171.jpg',
+      'IMG_6830.jpg',
+      'IMG_7278.jpg'
+    ];
+
+    const whackArea = document.getElementById('whack-area');
+    const startBtn = document.getElementById('start-whack-btn');
+    const msgBox = document.getElementById('whack-message');
+    const scoreBox = document.getElementById('whack-score');
+    const nextWhackBtn = document.getElementById('whack-next-btn');
+
+    let total = 0;
+    let hits = 0;
+    let penalties = 0;
+    let startTime;
+    let gameInterval;
+    let gameActive = false;
+
+    startBtn.addEventListener('click', () => {
+      startBtn.style.display = 'none';
+      scoreBox.style.display = 'none';
+      nextWhackBtn.style.display = 'none';
+      msgBox.innerHTML = 'Game starting in 3... 2... 1... GO!';
+      whackArea.innerHTML = '';
+      total = 0;
+      hits = 0;
+      penalties = 0;
+      gameActive = true;
+      
+      setTimeout(() => {
+        if (gameActive) {
+          msgBox.innerHTML = 'Whack the Alexes! Avoid hitting Nico!';
+          startTime = Date.now();
+          gameInterval = setInterval(spawnImage, 1500);
+          setTimeout(endGame, 30000); // 30 second game
+        }
+      }, 3000);
+    });
+
+    function spawnImage() {
+      if (!gameActive) return;
+      
+      const now = Date.now();
+      const elapsed = (now - startTime) / 1000;
+      
+      // Increase spawn rate after 20 seconds
+      const baseInterval = elapsed > 20 ? 600 : 1500;
+      clearInterval(gameInterval);
+      gameInterval = setInterval(spawnImage, Math.max(baseInterval - elapsed * 20, 300));
+
+      const isNico = Math.random() < 0.2; // 20% chance for Nico
+      const imgSrc = isNico
+        ? nicoFaces[Math.floor(Math.random() * nicoFaces.length)]
+        : alexFaces[Math.floor(Math.random() * alexFaces.length)];
+
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.classList.add('whack-img');
+
+      const x = Math.random() * 85; // Leave margin for image size
+      const y = Math.random() * 85;
+      img.style.left = `${x}%`;
+      img.style.top = `${y}%`;
+
+      whackArea.appendChild(img);
+      total++;
+
+      img.addEventListener('click', () => {
+        if (!gameActive) return;
+        
+        if (isNico) {
+          penalties++;
+          const reactions = ['Ouch! 😢', 'Ow! 💔', 'Why?! 😭', 'Noooo! 😰'];
+          showText(reactions[Math.floor(Math.random() * reactions.length)], x, y, '#FF4444');
+        } else {
+          hits++;
+          const reactions = ['Whack! 💥', 'Got him! ⭐', 'Nice! 👍', 'Boom! 💫'];
+          showText(reactions[Math.floor(Math.random() * reactions.length)], x, y, '#44FF44');
+        }
+        img.remove();
+      });
+
+      // Auto-remove after random time (faster removal in later game)
+      const removeTime = elapsed > 20 ? randomTime(800, 1500) : randomTime(1500, 2500);
+      setTimeout(() => {
+        if (whackArea.contains(img)) img.remove();
+      }, removeTime);
+    }
+
+    function randomTime(min, max) {
+      return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function showText(text, x, y, color = '#ff6f91') {
+      const t = document.createElement('div');
+      t.className = 'whack-text';
+      t.style.left = `${x}%`;
+      t.style.top = `${y}%`;
+      t.style.color = color;
+      t.textContent = text;
+      whackArea.appendChild(t);
+      setTimeout(() => {
+        if (whackArea.contains(t)) t.remove();
+      }, 1500);
+    }
+
+    function endGame() {
+      gameActive = false;
+      clearInterval(gameInterval);
+      whackArea.innerHTML = '';
+      
+      const finalScore = Math.max(0, hits - penalties);
+      const accuracy = total > 0 ? Math.round((hits / (hits + penalties)) * 100) : 0;
+      
+      let message = `GAME OVER!<br>`;
+      message += `Alexes Hit: ${hits}<br>`;
+      message += `Nicos Hit: ${penalties}<br>`;
+      message += `Final Score: ${finalScore}<br>`;
+      message += `Accuracy: ${accuracy}%`;
+      
+      if (accuracy >= 90) {
+        message += `<br><br>🏆 Perfect! You know how to protect Nico!`;
+      } else if (accuracy >= 70) {
+        message += `<br><br>👍 Good job! Just be more careful with Nico!`;
+      } else {
+        message += `<br><br>😅 Maybe you need more practice telling us apart!`;
+      }
+      
+      scoreBox.innerHTML = message;
+      scoreBox.style.display = 'block';
+      nextWhackBtn.style.display = 'inline-block';
+      startBtn.style.display = 'inline-block';
+      startBtn.textContent = 'Play Again';
+    }
+  </script>
+</body>
+</html>
