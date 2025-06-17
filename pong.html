@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pong Finale</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom right, #ffe4ec, #fff9f0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #e75480;
+    }
+    canvas {
+      background: #000;
+      border: 3px solid #e75480;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+    .scoreboard {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .instruction {
+      font-size: 0.9em;
+    }
+    /* end of game overlay */
+    #endScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255,255,255,0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    #endScreen h2 {
+      font-size: 2em;
+      color: #e75480;
+      margin-bottom: 10px;
+    }
+    #endScreen p {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+    #endScreen .endButton {
+      margin: 5px 10px;
+      padding: 12px 25px;
+      font-size: 1em;
+      background-color: #ff6f91;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #endScreen .endButton:hover {
+      background-color: #e65c80;
+    }
+  </style>
+</head>
+<body>
+  <h1>Final Challenge: Pong</h1>
+  <div class="scoreboard">
+    You: <span id="playerScore">0</span>
+    &nbsp;&nbsp;&nbsp;
+    CPU: <span id="cpuScore">0</span>
+  </div>
+  <canvas id="pongCanvas" width="800" height="400"></canvas>
+  <p class="instruction">
+    Use W and S keys to move your paddle up and down. First to 3 wins.
+  </p>
+
+  <div id="endScreen">
+    <h2 id="endMessage"></h2>
+    <p>happy 7 months girlfriend</p>
+    <button class="endButton" id="replayButton">Play Again</button>
+    <button class="endButton" id="homeButton">Home</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('pongCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const paddleWidth = 10, paddleHeight = 100;
+    let playerY = (canvas.height - paddleHeight) / 2;
+    let cpuY = (canvas.height - paddleHeight) / 2;
+    // increase this to move paddle faster
+    const paddleSpeed = 15;
+
+    let ballX = canvas.width / 2;
+    let ballY = canvas.height / 2;
+    let ballRadius = 8;
+    let ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
+    let ballSpeedY = 3 * (Math.random() > 0.5 ? 1 : -1);
+
+    let playerScore = 0, cpuScore = 0;
+    const winningScore = 3;
+
+    const endScreen = document.getElementById('endScreen');
+    const endMessage = document.getElementById('endMessage');
+    const replayButton = document.getElementById('replayButton');
+    const homeButton   = document.getElementById('homeButton');
+
+    function drawRect(x, y, w, h) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, w, h);
+    }
+    function drawCircle(x, y, r) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    function updateScoreboard() {
+      document.getElementById('playerScore').textContent = playerScore;
+      document.getElementById('cpuScore').textContent    = cpuScore;
+    }
+
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
+      ballSpeedY = 3 * (Math.random() > 0.5 ? 1 : -1);
+      updateScoreboard();
+      if (playerScore === winningScore || cpuScore === winningScore) {
+        clearInterval(loop);
+        showEndScreen();
+      }
+    }
+
+    function showEndScreen() {
+  // hide the pong canvas and scoreboard
+  canvas.style.display = 'none';
+  document.querySelector('canvas + p.instruction').style.display = 'none';
+  document.querySelector('.scoreboard').style.display = 'none';
+
+  // set and show your message
+  let msg;
+  if (cpuScore === winningScore) {
+    msg = 'haha I win but I still love you!';
+  } else {
+    msg = 'gg you win I love you!';
+  }
+  endMessage.textContent = msg;
+  endScreen.style.display = 'flex';
+}
+
+    function update() {
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      if (ballY < ballRadius || ballY > canvas.height - ballRadius) {
+        ballSpeedY *= -1;
+      }
+
+      // player paddle collision
+      if (
+        ballX - ballRadius < paddleWidth &&
+        ballY > playerY &&
+        ballY < playerY + paddleHeight
+      ) {
+        ballSpeedX = -ballSpeedX * 1.1;
+        ballSpeedY =  ballSpeedY * 1.1;
+      }
+
+      // cpu paddle collision
+      if (
+        ballX + ballRadius > canvas.width - paddleWidth &&
+        ballY > cpuY &&
+        ballY < cpuY + paddleHeight
+      ) {
+        ballSpeedX = -ballSpeedX * 1.1;
+        ballSpeedY =  ballSpeedY * 1.1;
+      }
+
+      if (ballX < 0) {
+        cpuScore++;
+        resetBall();
+      }
+      if (ballX > canvas.width) {
+        playerScore++;
+        resetBall();
+      }
+
+      // cpu simple ai
+      if (cpuY + paddleHeight / 2 < ballY) {
+        cpuY += 4;
+      } else {
+        cpuY -= 4;
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawRect(0, playerY, paddleWidth, paddleHeight);
+      drawRect(canvas.width - paddleWidth, cpuY, paddleWidth, paddleHeight);
+      drawCircle(ballX, ballY, ballRadius);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'w' || e.key === 'W') {
+        playerY = Math.max(0, playerY - paddleSpeed);
+      }
+      if (e.key === 's' || e.key === 'S') {
+        playerY = Math.min(canvas.height - paddleHeight, playerY + paddleSpeed);
+      }
+    });
+
+    replayButton.addEventListener('click', () => {
+      // reload this page to restart
+      window.location.reload();
+    });
+    homeButton.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    const loop = setInterval(() => {
+      update();
+      draw();
+    }, 1000 / 60);
+  </script>
+</body>
+</html>
